@@ -15,7 +15,11 @@ WARM = "#E8743B"  # 그래프 기본 색 (따뜻한 주황)
 # 비워 두면 화면에 입력칸이 나타납니다.
 INSIGHTS = {
     "graph1": "",
+    "graph2": "",
 }
+
+# 여러 영화를 한 그래프에 그릴 때 쓰는 따뜻한 색 5개
+WARM_COLORS = ["#E8743B", "#C0392B", "#F2B134", "#8E5B3A", "#D98880"]
 
 
 # ─────────────────────────────────────────────
@@ -66,6 +70,34 @@ def section_time(df: pd.DataFrame) -> None:
     show_insight("graph1")
 
 
+def section_top5(df: pd.DataFrame) -> None:
+    st.header("② 일관객 합계 상위 5편 비교")
+
+    # 기간 내 일관객 합계가 가장 큰 5편
+    top5 = df.groupby("영화명")["일관객"].sum().nlargest(5).index.tolist()
+    sub = df[df["영화명"].isin(top5)].sort_values(["영화명", "날짜"])
+
+    fig = px.line(
+        sub,
+        x="날짜",
+        y="일관객",
+        color="영화명",
+        category_orders={"영화명": top5},  # 합계 큰 순서로 범례 표시
+        color_discrete_sequence=WARM_COLORS,
+    )
+    fig.update_traces(
+        hovertemplate="날짜: %{x|%Y-%m-%d}<br>일관객: %{y:,}명<extra>%{fullData.name}</extra>"
+    )
+    fig.update_layout(
+        title="일관객 합계 상위 5편 — 날짜별 일관객",
+        xaxis_title="날짜",
+        yaxis_title="일관객(명)",
+        legend_title_text="영화 (클릭하면 켜고 끄기)",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    show_insight("graph2")
+
+
 # ─────────────────────────────────────────────
 # 화면 구성 (그래프 구역을 여기에 계속 추가)
 # ─────────────────────────────────────────────
@@ -75,6 +107,9 @@ st.caption("KOBIS 일별 박스오피스 10위권 기록(365일)")
 data = load_data()
 
 section_time(data)
+st.divider()
+
+section_top5(data)
 st.divider()
 
 # 새 구역은 아래처럼 함수를 만들어 이어 붙이면 됩니다.
