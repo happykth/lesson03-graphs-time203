@@ -16,6 +16,7 @@ WARM = "#E8743B"  # 그래프 기본 색 (따뜻한 주황)
 INSIGHTS = {
     "graph1": "",
     "graph2": "",
+    "graph3": "",
 }
 
 # 여러 영화를 한 그래프에 그릴 때 쓰는 따뜻한 색 5개
@@ -98,6 +99,39 @@ def section_top5(df: pd.DataFrame) -> None:
     show_insight("graph2")
 
 
+def section_daily_total(df: pd.DataFrame) -> None:
+    st.header("③ 날짜별 10위권 일관객 합계")
+
+    # 날짜별로 그날 10위권 일관객을 모두 더하기
+    daily = df.groupby("날짜", as_index=False)["일관객"].sum().sort_values("날짜")
+    top3 = daily.nlargest(3, "일관객")  # 합계가 가장 컸던 3일
+
+    fig = px.area(daily, x="날짜", y="일관객", color_discrete_sequence=[WARM])
+    fig.update_traces(hovertemplate="날짜: %{x|%Y-%m-%d}<br>합계: %{y:,}명<extra></extra>")
+
+    # 가장 컸던 3일을 점과 날짜 글자로 표시
+    fig.add_scatter(
+        x=top3["날짜"],
+        y=top3["일관객"],
+        mode="markers+text",
+        text=top3["날짜"].dt.strftime("%Y-%m-%d"),
+        textposition="top center",
+        cliponaxis=False,
+        marker=dict(color="#C0392B", size=11, line=dict(color="white", width=1.5)),
+        name="합계 상위 3일",
+        hovertemplate="날짜: %{x|%Y-%m-%d}<br>합계: %{y:,}명<extra>상위 3일</extra>",
+    )
+    fig.update_layout(
+        title="날짜별 10위권 일관객 합계",
+        xaxis_title="날짜",
+        yaxis_title="일관객 합계(명)",
+        yaxis_range=[0, daily["일관객"].max() * 1.15],  # 글자가 잘리지 않게 위쪽 여유
+        showlegend=False,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    show_insight("graph3")
+
+
 # ─────────────────────────────────────────────
 # 화면 구성 (그래프 구역을 여기에 계속 추가)
 # ─────────────────────────────────────────────
@@ -110,6 +144,9 @@ section_time(data)
 st.divider()
 
 section_top5(data)
+st.divider()
+
+section_daily_total(data)
 st.divider()
 
 # 새 구역은 아래처럼 함수를 만들어 이어 붙이면 됩니다.
