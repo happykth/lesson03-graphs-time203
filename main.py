@@ -17,6 +17,7 @@ INSIGHTS = {
     "graph1": "",
     "graph2": "",
     "graph3": "",
+    "graph4": "",
 }
 
 # 여러 영화를 한 그래프에 그릴 때 쓰는 따뜻한 색 5개
@@ -132,6 +133,37 @@ def section_daily_total(df: pd.DataFrame) -> None:
     show_insight("graph3")
 
 
+def section_top10_movies(df: pd.DataFrame) -> None:
+    st.header("④ 일관객 합계 TOP 10 영화")
+
+    # 영화별 일관객 합계와, 개봉 후 10위권에 든 날수(관측된 날의 수)
+    summary = (
+        df.groupby("영화명")
+        .agg(합계=("일관객", "sum"), 순위권_일수=("날짜", "count"))
+        .nlargest(10, "합계")
+        .sort_values("합계")  # 가로 막대는 아래→위로 그려지므로 오름차순 정렬
+    )
+
+    fig = px.bar(
+        summary,
+        x="합계",
+        y=summary.index,
+        orientation="h",
+        color_discrete_sequence=[WARM],
+        custom_data=["순위권_일수"],
+    )
+    fig.update_traces(
+        hovertemplate="%{y}<br>일관객 합계: %{x:,}명<br>10위권에 든 날수: %{customdata[0]}일<extra></extra>"
+    )
+    fig.update_layout(
+        title="일관객 합계 TOP 10 영화",
+        xaxis_title="일관객 합계(명)",
+        yaxis_title="",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    show_insight("graph4")
+
+
 # ─────────────────────────────────────────────
 # 화면 구성 (그래프 구역을 여기에 계속 추가)
 # ─────────────────────────────────────────────
@@ -147,6 +179,9 @@ section_top5(data)
 st.divider()
 
 section_daily_total(data)
+st.divider()
+
+section_top10_movies(data)
 st.divider()
 
 # 새 구역은 아래처럼 함수를 만들어 이어 붙이면 됩니다.
