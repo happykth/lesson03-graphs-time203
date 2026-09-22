@@ -18,6 +18,7 @@ INSIGHTS = {
     "graph2": "",
     "graph3": "",
     "graph4": "",
+    "graph5": "",
 }
 
 # 여러 영화를 한 그래프에 그릴 때 쓰는 따뜻한 색 5개
@@ -164,6 +165,46 @@ def section_top10_movies(df: pd.DataFrame) -> None:
     show_insight("graph4")
 
 
+def section_month_weekday_heatmap(df: pd.DataFrame) -> None:
+    st.header("⑤ 월 × 요일별 일관객 합계")
+
+    WEEKDAY_ORDER = ["월", "화", "수", "목", "금", "토", "일"]
+    WEEKDAY_MAP = dict(zip(range(7), WEEKDAY_ORDER))  # 0=월요일 ... 6=일요일
+
+    tmp = df.copy()
+    tmp["월"] = tmp["날짜"].dt.month
+    tmp["요일"] = tmp["날짜"].dt.dayofweek.map(WEEKDAY_MAP)
+
+    pivot = (
+        tmp.groupby(["월", "요일"])["일관객"]
+        .sum()
+        .unstack("요일")
+        .reindex(columns=WEEKDAY_ORDER)  # 요일을 월~일 순서로
+        .sort_index()  # 월을 1~12 순서로
+    )
+
+    fig = px.imshow(
+        pivot,
+        color_continuous_scale=[
+            "#FDEEE3",
+            "#F2B134",
+            "#E8743B",
+            "#C0392B",
+        ],  # 연한 색 → 진한 색(관객 많을수록 진하게)
+        aspect="auto",
+        labels=dict(x="요일", y="월", color="일관객 합계"),
+    )
+    fig.update_traces(
+        hovertemplate="%{y}월 %{x}요일<br>일관객 합계: %{z:,}명<extra></extra>"
+    )
+    fig.update_layout(
+        title="월 × 요일별 일관객 합계",
+        yaxis=dict(tickmode="array", tickvals=pivot.index, ticktext=[f"{m}월" for m in pivot.index]),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    show_insight("graph5")
+
+
 # ─────────────────────────────────────────────
 # 화면 구성 (그래프 구역을 여기에 계속 추가)
 # ─────────────────────────────────────────────
@@ -182,6 +223,9 @@ section_daily_total(data)
 st.divider()
 
 section_top10_movies(data)
+st.divider()
+
+section_month_weekday_heatmap(data)
 st.divider()
 
 # 새 구역은 아래처럼 함수를 만들어 이어 붙이면 됩니다.
